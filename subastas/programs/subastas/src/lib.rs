@@ -7,7 +7,7 @@ pub mod subastas {
     use super::*;
 
    pub fn crear_subasta(ctx: Context<CrearSubastaContext>, 
-    id: String,
+    id: u64, // Changed from String to u64
     nombre: String, 
     descripcion: String, 
     importe_minimo: u64, 
@@ -29,8 +29,8 @@ pub mod subastas {
 #[account]
 #[derive(InitSpace)]
 pub struct Subasta {
-    #[max_len(8)]
-    pub id: String,
+    // Removed #[max_len(8)] as it's not applicable to u64
+    pub id: u64, // Changed from String to u64
     #[max_len(32)]
     pub nombre: String,
     #[max_len(280)]
@@ -42,13 +42,20 @@ pub struct Subasta {
 }
 
 #[derive(Accounts)]
-#[instruction(id: String)]
+#[instruction(id: u64)] // Changed from String to u64
 pub struct CrearSubastaContext<'info> {
   #[account(
     init,  // pda
     payer = user, 
-    space = Subasta::INIT_SPACE,
-    seeds = [b"subasta", id.as_bytes()], // pda
+    // We need to calculate space manually for String fields + fixed-size fields
+    // For `InitSpace` to work correctly with `u64` instead of `String` in seeds,
+    // we need to ensure the space calculation is correct.
+    // InitSpace can automatically calculate for fixed types and `#[max_len]` Strings.
+    // If you remove #[max_len] from `id` (as it's now u64), InitSpace is fine.
+    // The `space = Subasta::INIT_SPACE` line remains correct for the updated `Subasta` struct.
+    space = Subasta::INIT_SPACE, 
+    // The seed now converts the u64 ID to bytes.
+    seeds = [b"subasta", id.to_le_bytes().as_ref()], 
     bump)]
   pub subasta: Account<'info, Subasta>,
 

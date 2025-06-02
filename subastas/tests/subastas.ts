@@ -8,10 +8,10 @@ describe("subastas", () => {
   anchor.setProvider(anchor.AnchorProvider.env());
   const provider = anchor.AnchorProvider.env();
 
-  const random = (Math.floor(Math.random() * 1000) + 1).toString();
+  const random = new anchor.BN(Math.floor(Math.random() * 1000) + 1);
   const program = anchor.workspace.subastas as Program<Subastas>;
   const [subastaPda] = anchor.web3.PublicKey.findProgramAddressSync(
-    [Buffer.from("subasta"), Buffer.from(random)],
+    [Buffer.from("subasta"),  Buffer.from(random.toArray('le', 8))],
     program.programId
   );
   console.log("subastaPda", subastaPda.toBase58());
