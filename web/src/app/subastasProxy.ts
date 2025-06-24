@@ -1,85 +1,81 @@
-import * as anchor from "@coral-xyz/anchor";
-import { Program } from '@coral-xyz/anchor';
-// import { Subastas } from '../../target/types/subastas'; // Uncomment and fix path if types are available
-import subastasIdl from './idl/subastas.json';
+"use client";
+import { PublicKey, Connection, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
+import { Program, AnchorProvider, BN, Idl, Wallet } from "@coral-xyz/anchor";
+import subastasIdl from "./idl/subastas.json";
+import { Subastas } from "./idl/subastas";
+const SUBASTAS_PROGRAM_ID = new PublicKey(subastasIdl.address);
 
-
-
-
-interface SubastaForm {
-  nombre: string;
-  descripcion: string;
-  importeMinimo: string;
-  fechaInicio: string;
-  fechaFin: string;
+// Helper: get AnchorProvider using Phantom wallet
+function getProvider(wallet: any) {
+  const connection = new Connection("http://127.0.0.1:8899", "confirmed");
+  return new AnchorProvider(connection, wallet, { preflightCommitment: "confirmed" });
 }
 
-interface SubastaAccount {
-  id: anchor.BN;
-  nombre: string;
-  descripcion: string;
-  importeMinimo: anchor.BN;
-  fechaInicio: anchor.BN;
-  fechaFin: anchor.BN;
-  estado: anchor.BN;
+// Helper: get Program instance
+function getProgram(wallet: any) {
+  const provider = getProvider(wallet);
+  return new Program<Subastas>
+    (subastasIdl as Idl, provider);
 }
 
-export async function getSubastas(walletAddress: string) {
-
-  const connection = new anchor.web3.Connection(
-    "http://localhost:8899",
-    "confirmed"
-  );
-
-  // Use Phantom wallet as provider
-  if (typeof window !== "undefined" && window.solana?.isPhantom) {
-    const phantomProvider = new anchor.AnchorProvider(
-      connection,
-      walletAddress,
-      { commitment: "confirmed" }
-    );
-    anchor.setProvider(phantomProvider);
-  }
-
-  // Create program instance with the specific program ID
-  const program = new anchor.Program(
-    subastasIdl as anchor.Idl, // IDL - you'll need to import your actual IDL
-    anchor.getProvider()
-  );
-
-  // Fetch all subasta accounts
+// Get all subastas
+export async function getSubastas(wallet: any) {
+  const program = getProgram(wallet);
   const subastas = await program.account.subasta.all();
-  console.log(subastas);
-  return subastas.map((item: { account: SubastaAccount; publicKey: anchor.web3.PublicKey }) => {
-    console.log(item);
-    console.log("id", item.account.id);
-    console.log("nombre", item.account.nombre);
-    console.log("descripcion", item.account.descripcion);
-      console.log("importe_minimo", item.account.importeMinimo.toString());
-    console.log("fecha_inicio", item.account.fechaInicio.toString());
-    console.log("fecha_fin", item.account.fechaFin.toString());
-    console.log("estado", item.account.estado.toString());
-    return {
-      id: item.account.id.toString(),
-      nombre: item.account.nombre || "nombre no definido",
-      descripcion: item.account.descripcion || "descripcion no definida",
-      importe_minimo: item.account.importeMinimo.toString(),
-      fecha_inicio: item.account.fechaInicio.toString(),
-      fecha_fin: item.account.fechaFin.toString(),
-      estado: item.account.estado.toString(),
-      publicKey: item.publicKey.toBase58(),
-    };
-  }).filter(item => item !== null);
+  return subastas.map(({ account, publicKey }: any) => ({
+    id: account.id.toString(),
+    nombre: account.nombre,
+    descripcion: account.descripcion,
+    importe_minimo: account.importeMinimo.toString(),
+    fecha_inicio: account.fechaInicio.toString(),
+    fecha_fin: account.fechaFin.toString(),
+    estado: account.estado.toString(),
+    publicKey: publicKey.toBase58(),
+  }));
 }
 
-export async function createSubasta(form: SubastaForm, walletAddress: string) {
-  // TODO: Implement real transaction logic
-  // Placeholder: just log
-  console.log('Create subasta', form, walletAddress);
+// Create a new subasta
+export async function createSubasta(
+  wallet: Wallet,
+  { nombre, descripcion, importe_minimo, fecha_inicio, fecha_fin }: {
+    nombre: string;
+    descripcion: string;
+    importe_minimo: string;
+    fecha_inicio: string;
+    fecha_fin: string;
+  } 
+) {
+  const program = getProgram(wallet);
+  const id = new BN(Date.now()); // or use a better unique id
+  const [subastaPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("subasta33"), id.toArrayLike(Buffer, "le", 8)],
+    SUBASTAS_PROGRAM_ID
+  );
+  await program.methods.crearSubasta(
+    id,
+    nombre,
+    descripcion,
+    new BN(importe_minimo),
+    new BN(fecha_inicio),
+    new BN(fecha_fin)
+  ).accounts({
+    subasta: subastaPda,
+    user: wallet.publicKey,
+    systemProgram: SystemProgram.programId,
+    rent: SYSVAR_RENT_PUBKEY,
+  }).rpc();
 }
 
-export async function deleteSubasta(id: string, walletAddress: string) {
-  // TODO: Implement real transaction logic
-  // Placeholder: just log
-  console.log('Delete subasta', id, walletAddress);
+// Finalize (delete) a subasta
+export async function deleteSubasta(wallet: any, id: string) {
+  const program = getProgram(wallet);
+  const bnId = new BN(id);
+  const [subastaPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("subasta33"), bnId.toArrayLike(Buffer, "le", 8)],
+    SUBASTAS_PROGRAM_ID
+  );
+  await program.methods.finalizarSubasta(bnId).accounts({
+    subasta: subastaPda,
+    user: wallet.publicKey,
+  }).rpc();
 } 
