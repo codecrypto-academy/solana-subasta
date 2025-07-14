@@ -5,7 +5,6 @@ declare_id!("FrKUMpMJU7znzhxYRwVqHcNr23eb12RP895yS39iFCba");
 #[program]
 pub mod subastas {
     use super::*;
-
    pub fn crear_subasta(ctx: Context<CrearSubastaContext>, 
     id: u64, // Changed from String to u64
     nombre: String, 
@@ -23,7 +22,7 @@ pub mod subastas {
     subasta.fecha_fin = fecha_fin;
     subasta.estado = 0;
     subasta.creador = *ctx.accounts.user.key;
-    subasta.ganador = Pubkey::default();
+    subasta.ganador = Pubkey::default(); //11111111111
     subasta.importe_ganador = 0;
     Ok(())
    }
@@ -52,7 +51,7 @@ pub mod subastas {
         subasta.importe_ganador = importe_puja;
     }
     require!(ts < subasta.fecha_fin, SubastasError::SubastaYaFinalizada);
-    puja.id = id;
+    puja.id = id; 
     puja.importe_puja =  importe_puja;
     puja.ts = ts;
     puja.pk = *ctx.accounts.user.key;
@@ -142,7 +141,7 @@ pub struct CrearPujaContext<'info> {
   #[account(
     init,  // pda
     payer = user, 
-    space = Puja::INIT_SPACE,
+    space = 8 + Puja::INIT_SPACE,
     seeds = [b"puja2222", id.to_le_bytes().as_ref(), user.key().as_ref()],
     bump)]
   pub puja: Account<'info, Puja>,
