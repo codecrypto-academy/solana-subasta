@@ -31,8 +31,8 @@ describe("subastas", () => {
       "Subasta 1",
       "Descripción de la subasta 1",
       new anchor.BN(100),
-      new anchor.BN(0),
-      new anchor.BN(0)
+      new anchor.BN(Math.floor(Date.now() / 1000)), // fecha de hoy (ahora, en segundos)
+      new anchor.BN(Math.floor(Date.now() / 1000) + 60) // dentro de 1 minuto
     ).accountsStrict({
       subasta: subastaPda,
       user: provider.wallet.publicKey,
@@ -100,7 +100,7 @@ describe("subastas", () => {
     const tx = await program.methods.crearPuja(
       random,
       new anchor.BN(100),
-      new anchor.BN(1717334400)
+      new anchor.BN(Math.floor(Date.now() / 1000) + 40)
     ).accountsStrict({
       puja: pujaPda,
       subasta: subastaPda,
@@ -130,6 +130,7 @@ describe("subastas", () => {
         console.log("fecha_inicio", auction.account.fechaInicio.toString());
         console.log("fecha_fin", auction.account.fechaFin.toString());
         console.log("estado", auction.account.estado.toString());
+        console.log("creador", auction.account.creador.toBase58());
         return auction;
       }));
 

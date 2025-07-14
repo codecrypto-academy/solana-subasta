@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("AeGHgXBqDZjRftpfckDtVs1oE2hkbvYNNv5H6hFkP68d");
+declare_id!("FrKUMpMJU7znzhxYRwVqHcNr23eb12RP895yS39iFCba");
 
 #[program]
 pub mod subastas {
@@ -22,6 +22,9 @@ pub mod subastas {
     subasta.fecha_inicio = fecha_inicio;
     subasta.fecha_fin = fecha_fin;
     subasta.estado = 0;
+    subasta.creador = *ctx.accounts.user.key;
+    subasta.ganador = Pubkey::default();
+    subasta.importe_ganador = 0;
     Ok(())
    }
 
@@ -39,7 +42,16 @@ pub mod subastas {
     importe_puja: u64,
     ts: u64
   ) -> Result<()> {
+
+
+
     let puja = &mut ctx.accounts.puja;
+    let subasta = &mut ctx.accounts.subasta;
+    if importe_puja > subasta.importe_ganador {
+        subasta.ganador = *ctx.accounts.user.key;
+        subasta.importe_ganador = importe_puja;
+    }
+    require!(ts < subasta.fecha_fin, SubastasError::SubastaYaFinalizada);
     puja.id = id;
     puja.importe_puja =  importe_puja;
     puja.ts = ts;
@@ -68,7 +80,10 @@ pub struct Subasta {
     pub importe_minimo: u64,
     pub fecha_inicio: u64,
     pub fecha_fin: u64,
-    pub estado: u64
+    pub estado: u64,
+    pub creador: Pubkey,
+    pub ganador: Pubkey,
+    pub importe_ganador: u64,
 }
 
 #[derive(Accounts)]

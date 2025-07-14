@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-subastas = "AeGHgXBqDZjRftpfckDtVs1oE2hkbvYNNv5H6hFkP68d"
+subastas = "FrKUMpMJU7znzhxYRwVqHcNr23eb12RP895yS39iFCba"
 
 [registry]
 url = "https://api.apr.dev"
