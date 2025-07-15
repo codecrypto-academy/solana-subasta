@@ -1,5 +1,5 @@
 {
-  "address": "AeGHgXBqDZjRftpfckDtVs1oE2hkbvYNNv5H6hFkP68d",
+  "address": "FrKUMpMJU7znzhxYRwVqHcNr23eb12RP895yS39iFCba",
   "metadata": {
     "name": "subastas",
     "version": "0.1.0",
@@ -424,6 +424,18 @@
           },
           {
             "name": "estado",
+            "type": "u64"
+          },
+          {
+            "name": "creador",
+            "type": "pubkey"
+          },
+          {
+            "name": "ganador",
+            "type": "pubkey"
+          },
+          {
+            "name": "importe_ganador",
             "type": "u64"
           }
         ]

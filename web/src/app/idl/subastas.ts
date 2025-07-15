@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/subastas.json`.
  */
 export type Subastas = {
-  "address": "AeGHgXBqDZjRftpfckDtVs1oE2hkbvYNNv5H6hFkP68d",
+  "address": "FrKUMpMJU7znzhxYRwVqHcNr23eb12RP895yS39iFCba",
   "metadata": {
     "name": "subastas",
     "version": "0.1.0",
@@ -430,6 +430,18 @@ export type Subastas = {
           },
           {
             "name": "estado",
+            "type": "u64"
+          },
+          {
+            "name": "creador",
+            "type": "pubkey"
+          },
+          {
+            "name": "ganador",
+            "type": "pubkey"
+          },
+          {
+            "name": "importeGanador",
             "type": "u64"
           }
         ]

@@ -6,6 +6,7 @@ type PhantomProvider = {
   isPhantom?: boolean;
   publicKey?: { toString: () => string };
   connect: (opts?: { onlyIfTrusted?: boolean }) => Promise<{ publicKey: { toString: () => string } }>;
+  on?: (event: string, handler: (...args: unknown[]) => void) => void;
 };
 
 declare global {
@@ -43,9 +44,25 @@ export const GlobalProvider = ({ children }: { children: React.ReactNode }) => {
   const login = async () => {
     if (typeof window !== "undefined" && window.solana?.isPhantom) {
       try {
-        const resp = await window.solana.connect();
-        setWalletAddress(resp.publicKey.toString());
-        router.push("/dashboard");
+        // Listen for wallet account changes and update walletAddress accordingly
+        if (window.solana && typeof window.solana.on === "function") {
+          window.solana.on("accountChanged", (...args: unknown[]) => {
+            const publicKey = args[0] as { toString: () => string } | null;
+            if (publicKey) {
+              setWalletAddress(publicKey.toString());
+              router.push("/dashboard");
+            } else {
+              setWalletAddress(null);
+              router.push("/");
+            }
+          });
+          const resp = await window.solana.connect();
+          setWalletAddress(resp.publicKey.toString());
+          router.push("/dashboard");
+        }
+
+
+       
       } catch {
         // handle error
       }

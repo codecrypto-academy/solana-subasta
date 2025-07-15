@@ -28,6 +28,12 @@ function Header() {
   );
 }
 
+function Footer() {
+  return <footer style={{ textAlign: "center", padding: "1rem", borderTop: "1px solid #eee" }}>
+    <p>Solana Subastas</p>
+  </footer>;
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
@@ -35,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <GlobalProvider>
           <Header />
           {children}
+          <Footer />
         </GlobalProvider>
       </body>
     </html>

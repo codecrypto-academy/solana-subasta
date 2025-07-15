@@ -3,6 +3,7 @@ import { PublicKey, Connection, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solan
 import { Program, AnchorProvider, BN, Idl, Wallet } from "@coral-xyz/anchor";
 import subastasIdl from "./idl/subastas.json";
 import { Subastas } from "./idl/subastas";
+import bs58 from "bs58";
 const SUBASTAS_PROGRAM_ID = new PublicKey(subastasIdl.address);
 
 // Helper: get AnchorProvider using Phantom wallet
@@ -31,6 +32,9 @@ export async function getSubastas(wallet: any) {
     fecha_fin: account.fechaFin.toString(),
     estado: account.estado.toString(),
     publicKey: publicKey.toBase58(),
+    creador: account.creador.toBase58(),
+    ganador: account.ganador.toBase58(),
+    importe_ganador: account.importeGanador.toString(),
   }));
 }
 
@@ -46,7 +50,8 @@ export async function createSubasta(
   } 
 ) {
   const program = getProgram(wallet);
-  const id = new BN(Date.now()); // or use a better unique id
+  const id = new BN(Date.now()); 
+  console.log(SUBASTAS_PROGRAM_ID.toBase58()); // or use a better unique id
   const [subastaPda] = PublicKey.findProgramAddressSync(
     [Buffer.from("subasta33"), id.toArrayLike(Buffer, "le", 8)],
     SUBASTAS_PROGRAM_ID
@@ -78,4 +83,68 @@ export async function deleteSubasta(wallet: any, id: string) {
     subasta: subastaPda,
     user: wallet.publicKey,
   }).rpc();
+} 
+
+// Bid on a subasta
+export async function crearPuja(
+  wallet: Wallet,
+  { id, importe_puja }: { id: string; importe_puja: string }
+) {
+
+  
+  // El error ocurre porque la PDA de la puja es única por subasta+usuario,
+  // y solo puedes crear UNA cuenta Puja por usuario por subasta.
+  // Si intentas ejecutar esto dos veces, la segunda vez la cuenta ya existe y Anchor lanza error.
+  // Solución: Si quieres permitir varias pujas por usuario, debes usar un seed único extra (ej: timestamp o un contador incremental).
+  // Si solo quieres una puja por usuario por subasta, debes actualizar la cuenta en vez de crearla de nuevo.
+
+  // --- Código actual: solo permite una puja por usuario por subasta ---
+  const program = getProgram(wallet);
+  const bnId = new BN(id);
+  const bnImporte = new BN(importe_puja);
+  const ts = new BN(Date.now());
+  const [subastaPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("subasta33"), bnId.toArrayLike(Buffer, "le", 8)],
+    SUBASTAS_PROGRAM_ID
+  );
+  const [pujaPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("puja2222"), bnId.toArrayLike(Buffer, "le", 8), wallet.publicKey.toBuffer()],
+    SUBASTAS_PROGRAM_ID
+  );
+  await program.methods.crearPuja(
+    bnId,
+    bnImporte,
+    ts
+  ).accounts({
+    subasta: subastaPda,
+    puja: pujaPda,
+    user: wallet.publicKey,
+    systemProgram: SystemProgram.programId,
+    rent: SYSVAR_RENT_PUBKEY,
+  }).rpc();
+} 
+
+// Obtener todas las pujas de una subasta
+export async function getPujas(wallet: Wallet, subastaId: string) {
+  const program = getProgram(wallet);
+  const bnId = new BN(subastaId);
+  // El campo id está después del discriminator (8 bytes)
+  // El id es un u64 little endian (8 bytes)
+  const idBuffer = bnId.toArrayLike(Buffer, 'le', 8);
+  const pujas = await program.account.puja.all([
+    {
+      memcmp: {
+        offset: 8, // 8 bytes del discriminator
+        bytes: bs58.encode(idBuffer), // <-- base58 correcto
+      },
+    },
+  ]);
+  return pujas.map(({ account, publicKey }: any) => ({
+    id: account.id.toString(),
+    nombre: account.nombre,
+    importe_puja: account.importePuja ? account.importePuja.toString() : account.importe_puja?.toString(),
+    ts: account.ts.toString(),
+    pk: account.pk.toBase58(),
+    publicKey: publicKey.toBase58(),
+  }));
 } 
